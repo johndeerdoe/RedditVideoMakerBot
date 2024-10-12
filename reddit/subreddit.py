@@ -11,41 +11,43 @@ from utils.posttextparser import posttextparser
 from utils.subreddit import get_subreddit_undone
 from utils.videos import check_done
 from utils.voice import sanitize_text
+import logging
 
 
 def get_subreddit_threads(POST_ID: str):
     """
     Returns a list of threads from the AskReddit subreddit.
     """
-
     print_substep("Logging into Reddit.")
 
     content = {}
-    if settings.config["reddit"]["creds"]["2fa"]:
-        print("\nEnter your two-factor authentication code from your authenticator app.\n")
-        code = input("> ")
-        print()
-        pw = settings.config["reddit"]["creds"]["password"]
-        passkey = f"{pw}:{code}"
-    else:
-        passkey = settings.config["reddit"]["creds"]["password"]
-    username = settings.config["reddit"]["creds"]["username"]
-    if str(username).casefold().startswith("u/"):
-        username = username[2:]
     try:
+        reddit_creds = settings.config["reddit"]["creds"]
+        if reddit_creds.get("2fa"):
+            print("\nEnter your two-factor authentication code from your authenticator app.\n")
+            code = input("> ")
+            print()
+            pw = reddit_creds["password"]
+            passkey = f"{pw}:{code}"
+        else:
+            passkey = reddit_creds["password"]
+        username = reddit_creds["username"]
+        if str(username).casefold().startswith("u/"):
+            username = username[2:]
         reddit = praw.Reddit(
-            client_id=settings.config["reddit"]["creds"]["client_id"],
-            client_secret=settings.config["reddit"]["creds"]["client_secret"],
+            client_id=reddit_creds["client_id"],
+            client_secret=reddit_creds["client_secret"],
             user_agent="Accessing Reddit threads",
             username=username,
-            passkey=passkey,
+            password=passkey,
             check_for_async=False,
         )
-    except ResponseException as e:
-        if e.response.status_code == 401:
-            print("Invalid credentials - please check them in config.toml")
-    except:
-        print("Something went wrong...")
+    except KeyError as e:
+        logging.error(f"Missing key in settings.config: {e}")
+        raise
+    except Exception as e:
+        logging.error(f"An error occurred: {e}")
+        raise
 
     # Ask user for subreddit input
     print_step("Getting subreddit threads...")
