@@ -1,4 +1,5 @@
 # documentation for tiktok api: https://github.com/oscie57/tiktok-voice/wiki
+import logging
 import base64
 import random
 import time
@@ -86,7 +87,9 @@ class TikTok:
             "Cookie": f"sessionid={settings.config['settings']['tts']['tiktok_sessionid']}",
         }
 
-        self.URI_BASE = "https://api16-normal-c-useast1a.tiktokv.com/media/api/text/speech/invoke/"
+        self.URI_BASE = (
+            "https://tiktok-tts.weilnet.workers.dev/api/generation"
+        )
         self.max_chars = 200
 
         self._session = requests.Session()
@@ -94,53 +97,79 @@ class TikTok:
         self._session.headers = headers
 
     def run(self, text: str, filepath: str, random_voice: bool = False):
+     # if tiktok_voice is not set in the config file, then use a random voice
+
         if random_voice:
             voice = self.random_voice()
         else:
-            # if tiktok_voice is not set in the config file, then use a random voice
             voice = settings.config["settings"]["tts"].get("tiktok_voice", None)
 
-        # get the audio from the TikTok API
+        # Get audio from the TikTok API
         data = self.get_voices(voice=voice, text=text)
 
-        # check if there was an error in the request
-        status_code = data["status_code"]
-        if status_code != 0:
-            raise TikTokTTSException(status_code, data["message"])
+        # Check for errors in the API response
+        if not data.get("success", False):
+            print("API request was unsuccessful.")
+            raise TikTokTTSException(0, "Failed to fetch voices")
 
-        # decode data from base64 to binary
+        # Extract raw voices
+        raw_voices = data.get("data")
+        
+        if raw_voices is None:
+            print("No voice data returned.")
+            raise TikTokTTSException(0, "No voice data returned from API")
+
+        # Decode data from base64 to binary
         try:
-            raw_voices = data["data"]["v_str"]
-        except:
-            print(
-                "The TikTok TTS returned an invalid response. Please try again later, and report this bug."
-            )
-            raise TikTokTTSException(0, "Invalid response")
-        decoded_voices = base64.b64decode(raw_voices)
+            decoded_voices = base64.b64decode(raw_voices)
+        except (TypeError, ValueError) as e:
+            print("Failed to decode raw voices:", str(e))
+            raise TikTokTTSException(0, "Decoding failed for the received data.")
 
-        # write voices to specified filepath
+        # Write voices to specified filepath
         with open(filepath, "wb") as out:
             out.write(decoded_voices)
 
     def get_voices(self, text: str, voice: Optional[str] = None) -> dict:
-        """If voice is not passed, the API will try to use the most fitting voice"""
-        # sanitize text
+        """Retrieve voices from the TikTok API."""
+        # Sanitize text
         text = text.replace("+", "plus").replace("&", "and").replace("r/", "")
-
-        # prepare url request
-        params = {"req_text": text, "speaker_map_type": 0, "aid": 1233}
-
+        
+        # Prepare request parameters
+        params = {"text": text}
         if voice is not None:
-            params["text_speaker"] = voice
+            params["voice"] = voice
 
-        # send request
+        # Send the request and handle connection issues
         try:
-            response = self._session.post(self.URI_BASE, params=params)
+            response = self._session.post(self.URI_BASE, json=params)
+            response.raise_for_status()  # Raises an error for bad responses
+        except requests.HTTPError as http_err:
+            print(f"HTTP error occurred: {http_err}")
+            raise TikTokTTSException(0, "HTTP error during voice fetching.")
         except ConnectionError:
+            print("Connection error, retrying...")
             time.sleep(random.randrange(1, 7))
-            response = self._session.post(self.URI_BASE, params=params)
+            response = self._session.post(self.URI_BASE, json=params)
 
-        return response.json()
+        # Parse the response
+        data = response.json()
+
+        # Log the full response for testing only
+        #print(f"Response from TikTok API: {data}")
+
+        # Check if the request was successful
+        if not data.get("success", False):
+            print("API request was unsuccessful.")
+            raise TikTokTTSException(0, "Failed to fetch voices")
+
+        # If `success` is true but there’s still no data, let's raise an error.
+        if "data" not in data or not data["data"]:
+            print("No voice data returned.")
+            raise TikTokTTSException(0, "No voice data returned from API")
+
+        # Return the data
+        return data
 
     @staticmethod
     def random_voice() -> str:
