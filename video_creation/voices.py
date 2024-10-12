@@ -11,7 +11,7 @@ from TTS.streamlabs_polly import StreamlabsPolly
 from TTS.TikTok import TikTok
 from utils import settings
 from utils.console import print_step, print_table
-
+from TTS.openai import oai_TTSEngine
 console = Console()
 
 TTSProviders = {
@@ -21,6 +21,7 @@ TTSProviders = {
     "TikTok": TikTok,
     "pyttsx": pyttsx,
     "ElevenLabs": elevenlabs,
+    "Openai": oai_TTSEngine,
 }
 
 
