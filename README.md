@@ -112,6 +112,10 @@ I have tried to simplify the code so anyone can read it and start contributing a
 - [x] Checks if a video has already been created
 - [x] Light and Dark modes
 - [x] NSFW post filter
+- [ ] Better logging and error handling 
+- [ ] Add more tts options
+- [ ] Make it so we can run diffrent subreddit groups at the same time with diffrent 
+      settings: such as story mode only on story subreddits
 
 Please read our [contributing guidelines](CONTRIBUTING.md) for more detailed information.
 
@@ -136,6 +140,14 @@ Freebiell (Freebie#3263) - https://github.com/FreebieII
 Aman Raza (electro199#8130) - https://github.com/electro199
 
 Cyteon (cyteon) - https://github.com/cyteon
+
+
+## KNOWN BUGS 
+
+-[ ] Wont do multiple runs 
+-[ ] Tiktok tts engine uri had to be changed needs to be a more stable self maintained uri 
+-[ ] Long pause at the end of the video with no words spoken
+-[ ] Videos save to multiple places 
 
 
 ## LICENSE

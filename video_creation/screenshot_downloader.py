@@ -282,6 +282,17 @@ async def get_screenshots_of_reddit_posts(reddit_object: dict, screenshot_num: i
                     )
 
                 try:
+                    # This is where comment screenshots are taken 
+                    # Using thing id isnt the most reliable way to locate the comment, but it works for now
+                    # It would be to use xpath to grab it by the text content, permaling and author
+                    # Example 
+                    # # Using XPath to select the element by the author and a partial match of its content.
+                    #    comment_locator = page.locator(
+                    #    f'xpath=//shreddit-comment[contains(@permalink, "{comment["comment_id"]}") and @author="{comment["author"]}"]'
+                    #    )
+                    #
+                    # Might be worth chaging the way we locate the comment in the future
+
                     comment_locator = page.locator(f'shreddit-comment[thingid="t1_{comment["comment_id"]}"]')
                     
                     logging.debug(
