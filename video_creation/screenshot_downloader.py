@@ -15,6 +15,9 @@ from utils.console import print_step, print_substep
 from utils.imagenarator import imagemaker
 from utils.playwright import clear_cookie_by_name
 from utils.videos import save_data
+from utils.arg_parser import get_args
+
+args = get_args()
 
 __all__ = ["get_screenshots_of_reddit_posts"]
 
@@ -25,10 +28,10 @@ async def get_screenshots_of_reddit_posts(reddit_object: dict, screenshot_num: i
         reddit_object (Dict): Reddit object received from reddit/subreddit.py
         screenshot_num (int): Number of screenshots to download
     """
-    # Sets args so if logs are on headless mode is off
-    parser = argparse.ArgumentParser(description="Control Headlessmode")
-    parser.add_argument('--log', action='store_true', help="Enable logging")
-    args = parser.parse_args() 
+
+    
+
+
 
     # Configure logging
     logging.basicConfig(level=logging.DEBUG if args.log else logging.INFO)
@@ -90,7 +93,7 @@ async def get_screenshots_of_reddit_posts(reddit_object: dict, screenshot_num: i
         logger.info("Launching headless browser...")
 
         browser = await p.chromium.launch(
-           headless=not args.log 
+           headless=not args.headlessoff 
         ) 
         # Sets headless=false if --log is passed when running main.py
         # headless=False will show the browser for debugging purposes
@@ -284,7 +287,7 @@ async def get_screenshots_of_reddit_posts(reddit_object: dict, screenshot_num: i
                 try:
                     # This is where comment screenshots are taken 
                     # Using thing id isnt the most reliable way to locate the comment, but it works for now
-                    # It would be to use xpath to grab it by the text content, permaling and author
+                    # It would be to use xpath to grab it by the text content, permalinking and author
                     # Example 
                     # # Using XPath to select the element by the author and a partial match of its content.
                     #    comment_locator = page.locator(
@@ -322,6 +325,12 @@ async def get_screenshots_of_reddit_posts(reddit_object: dict, screenshot_num: i
                             )
                     else:
                         logger.info(f"Comment {comment['comment_id']} is not visible, skipping...")
+                        print(f"Comment {comment['comment_id']} is not visible, skipping...")
+                        print(Path)
+                        # Exit the program if the comment is not visible need to add
+                        # a way to skip the comment and continue with the next one\
+                        # That also means we need to add a way to skip the comment in the final video
+                        exit()  
                 except TimeoutError:
                     logger.error(f"TimeoutError: Skipping screenshot for comment {comment['comment_id']}...")
                     continue
